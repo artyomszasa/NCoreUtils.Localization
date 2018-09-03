@@ -1,16 +1,11 @@
 namespace NCoreUtils.Localization.Json
 
-open System.Collections.Generic
-open Microsoft.Extensions.Logging
-open NCoreUtils
-open Newtonsoft.Json
-open Newtonsoft.Json
 open System.Collections.Immutable
-open NCoreUtils
 open System.IO
-open Newtonsoft.Json
 open System.Text
+open Microsoft.Extensions.Logging
 open Newtonsoft.Json
+open NCoreUtils
 
 [<AutoOpen>]
 module private JsonExt =

@@ -18,7 +18,7 @@ type StringLocalizer =
     | null -> CultureInfo.CurrentCulture
     | _    -> this.culture
 
-  new (source : ILocalizationSource, culture : CultureInfo) =
+  new (source, [<Optional>] culture) =
     { source  = source
       culture = culture }
 
@@ -69,12 +69,3 @@ type StringLocalizer =
     member this.Item with get (name, arguments) = this.Item (name, arguments)
     member this.GetAllStrings includeParentCultures = this.GetAllStrings includeParentCultures
     member this.WithCulture culture = this.WithCulture culture
-
-type StringLocalizer<'T> =
-  inherit StringLocalizer
-
-  new (source, culture) = { inherit StringLocalizer (source, culture) }
-
-  override this.WithCulture culture = StringLocalizer<'T> (this.Source, culture) :> _
-
-  interface IStringLocalizer<'T>
