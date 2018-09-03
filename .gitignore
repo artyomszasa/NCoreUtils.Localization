@@ -1,3 +1,6 @@
 .vscode
 NCoreUtils*/bin
 NCoreUtils*/obj
+NCoreUtils.Localization.Unit/coverage.opencover.xml
+NCoreUtils.Localization.Unit/report
+

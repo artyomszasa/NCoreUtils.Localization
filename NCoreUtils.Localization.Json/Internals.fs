@@ -106,6 +106,7 @@ module private Readers =
           readOrFail reader
           while (reader.Depth > depth) || (reader.Depth = depth && reader.TokenType <> JsonToken.PropertyName && reader.TokenType <> JsonToken.EndObject) do
             readOrFail reader
+          readOrFail reader
           read acc logger reader
       | _ -> jfailwithf "Expected %A ot %A, got %A at %s." JsonToken.EndObject JsonToken.PropertyName reader.TokenType reader.Path
     { new IKeyValueReader with
