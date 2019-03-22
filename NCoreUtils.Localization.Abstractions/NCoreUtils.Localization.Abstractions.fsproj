@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <VersionPrefix>2.0.0</VersionPrefix>
+    <VersionPrefix>2.1.0-alpha0</VersionPrefix>
     <!-- NuGet -->
     <PackageId>NCoreUtils.Localization.Abstraction</PackageId>
     <Title>$(PackageId)</Title>
