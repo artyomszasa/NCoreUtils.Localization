@@ -1,20 +1,8 @@
 namespace NCoreUtils.Localization
 
-open System
-open System.Collections
-open System.Collections.Generic
-open System.Collections.Immutable
-open System.Globalization
-open System.IO
-open System.Runtime.InteropServices
-open System.Runtime.CompilerServices
-open System.Text.RegularExpressions
-open Microsoft.Extensions.Logging
-open NCoreUtils
 
-[<CLIMutable>]
-type JsonLocalizationSourceOptions = { Path : string }
-
+(*
+// type JsonLocalizationSourceFactory
 
 [<AutoOpen>]
 module private JsonLocalizationSourceHelpers =
@@ -92,3 +80,4 @@ type JsonLocalizationSource =
   interface ILocalizationSource with
     [<CLIEvent>]
     member this.Changed = this.Changed
+*)

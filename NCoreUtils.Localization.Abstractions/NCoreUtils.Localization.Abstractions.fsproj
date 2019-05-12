@@ -1,14 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <VersionPrefix>2.1.0-alpha0</VersionPrefix>
+    <Version>2.1.0</Version>
     <!-- NuGet -->
     <PackageId>NCoreUtils.Localization.Abstraction</PackageId>
     <Title>$(PackageId)</Title>
     <Authors>Artyom Antyipin</Authors>
-    <Description>Generic localization abstractions.</Description>
+    <Description>Generic source based localization abstractions.</Description>
     <Copyright>Artyom Antyipin</Copyright>
     <RepositoryUrl>https://github.com/artyomszasa/NCoreUtils.Localization.git</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <!-- Assembly Info -->
     <Product>NCoreUtils</Product>
     <AssemblyName>$(PackageId)</AssemblyName>

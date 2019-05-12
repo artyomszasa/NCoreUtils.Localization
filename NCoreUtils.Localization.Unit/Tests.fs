@@ -42,7 +42,7 @@ let ``JSON array`` () =
     let data =
       use reader = new StringReader (jsonArray1)
       use jreader = new JsonTextReader (reader)
-      JsonKeyValueReader.read jreader logger "inline"
+      JsonKeyValueReader.read logger "inline" jreader
     Assert.True (data.ContainsKey (ci "key1"))
     Assert.True (data.ContainsKey (ci "key2"))
     Assert.Equal ("value1", data.[ci "key1"])
@@ -52,7 +52,7 @@ let ``JSON array`` () =
     let data =
       use reader = new StringReader (jsonArray2)
       use jreader = new JsonTextReader (reader)
-      JsonKeyValueReader.read jreader logger "inline"
+      JsonKeyValueReader.read logger "inline" jreader
     Assert.True (data.ContainsKey (ci "key1"))
     Assert.True (data.ContainsKey (ci "key2"))
     Assert.Equal ("value1", data.[ci "key1"])
@@ -62,7 +62,7 @@ let ``JSON array`` () =
     let data =
       use reader = new StringReader (jsonArray3)
       use jreader = new JsonTextReader (reader)
-      JsonKeyValueReader.read jreader logger "inline"
+      JsonKeyValueReader.read logger "inline" jreader
     Assert.True (data.ContainsKey (ci "key1"))
     Assert.True (data.ContainsKey (ci "key2"))
     Assert.Equal ("value1", data.[ci "key1"])
@@ -74,7 +74,7 @@ let ``JSON object`` () =
   let data =
     use reader = new StringReader (jsonObject)
     use jreader = new JsonTextReader (reader)
-    JsonKeyValueReader.read jreader logger "inline"
+    JsonKeyValueReader.read logger "inline" jreader
   Assert.True (data.ContainsKey (ci "key1"))
   Assert.True (data.ContainsKey (ci "key2"))
   Assert.Equal ("value1", data.[ci "key1"])
@@ -85,29 +85,29 @@ let ``JSON object`` () =
 let ``Non-string key`` () =
   use reader = new StringReader (jsonNonStringKey)
   use jreader = new JsonTextReader (reader)
-  Assert.Throws<JsonException> (fun () -> JsonKeyValueReader.read jreader logger "inline" |> ignore)
+  Assert.Throws<JsonException> (fun () -> JsonKeyValueReader.read logger "inline" jreader |> ignore)
 
 [<Fact>]
 let ``Key missing`` () =
   use reader = new StringReader (jsonKeyMissing)
   use jreader = new JsonTextReader (reader)
-  Assert.Throws<JsonException> (fun () -> JsonKeyValueReader.read jreader logger "inline" |> ignore)
+  Assert.Throws<JsonException> (fun () -> JsonKeyValueReader.read logger "inline" jreader |> ignore)
 
 [<Fact>]
 let ``Value missing`` () =
   use reader = new StringReader (jsonValueMissing)
   use jreader = new JsonTextReader (reader)
-  Assert.Throws<JsonException> (fun () -> JsonKeyValueReader.read jreader logger "inline" |> ignore)
+  Assert.Throws<JsonException> (fun () -> JsonKeyValueReader.read logger "inline" jreader |> ignore)
 
 [<Fact>]
 let ``JSON primitive`` () =
   use reader = new StringReader (jsonInvalid1)
   use jreader = new JsonTextReader (reader)
-  Assert.Throws<JsonException> (fun () -> JsonKeyValueReader.read jreader logger "inline" |> ignore)
+  Assert.Throws<JsonException> (fun () -> JsonKeyValueReader.read logger "inline" jreader |> ignore)
 
 [<Fact>]
 let ``Multiple key property`` () =
   use reader = new StringReader (jsonMultipleKey)
   use jreader = new JsonTextReader (reader)
-  Assert.Throws<JsonException> (fun () -> JsonKeyValueReader.read jreader logger "inline" |> ignore)
+  Assert.Throws<JsonException> (fun () -> JsonKeyValueReader.read logger "inline" jreader |> ignore)
 

@@ -18,7 +18,7 @@ type StringLocalizer =
     | null -> CultureInfo.CurrentCulture
     | _    -> this.culture
 
-  new (source, [<Optional>] culture) =
+  new (source, [<Optional; DefaultParameterValue(null:CultureInfo)>] culture) =
     { source  = source
       culture = culture }
 

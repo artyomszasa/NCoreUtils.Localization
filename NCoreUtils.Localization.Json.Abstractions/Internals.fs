@@ -2,6 +2,7 @@ namespace NCoreUtils.Localization.Json
 
 open System.Collections.Immutable
 open System.IO
+open System.Runtime.CompilerServices
 open System.Text
 open Microsoft.Extensions.Logging
 open Newtonsoft.Json
@@ -10,19 +11,24 @@ open NCoreUtils
 [<AutoOpen>]
 module private JsonExt =
 
-  let inline jfailwith msg = JsonException msg |> raise
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+  let jfailwith msg = JsonException msg |> raise
 
-  let inline jfailwithf fmt = Printf.kprintf jfailwith fmt
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+  let jfailwithf fmt = Printf.kprintf jfailwith fmt
 
-  let inline readOrFail (reader : JsonReader) =
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+  let readOrFail (reader : JsonReader) =
     if not (reader.Read()) then
       jfailwith "End of stream reached while reading json."
 
-  let inline expectedOrFail expectedToken (reader : JsonReader) =
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+  let expectedOrFail expectedToken (reader : JsonReader) =
     if reader.TokenType <> expectedToken then
       jfailwithf "Expected %A, got %A at %s." expectedToken reader.TokenType reader.Path
 
-  let inline readExpectedOrFail expectedToken (reader : JsonReader) =
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+  let readExpectedOrFail expectedToken (reader : JsonReader) =
     readOrFail reader
     expectedOrFail expectedToken reader
 
@@ -30,10 +36,13 @@ module private JsonExt =
 module private Readers =
 
   [<Struct>]
+  [<NoEquality; NoComparison>]
   type KvRes =
     | Kv of Key:string * Value:string
     | No
 
+  [<Struct>]
+  [<NoEquality; NoComparison>]
   type Both =
     | Neither
     | Left  of KeyOnly:string
@@ -43,6 +52,7 @@ module private Readers =
   [<RequireQualifiedAccess>]
   module Both =
 
+    [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
     let withKey key both =
       match both with
       | Neither -> Left key
@@ -50,6 +60,7 @@ module private Readers =
       | Both (k, _)
       | Left  k -> jfailwithf "Key already specified (orignal = %s,  new = %s)" k key
 
+    [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
     let withValue value both =
       match both with
       | Neither -> Right value
@@ -118,7 +129,7 @@ module private Readers =
 module public JsonKeyValueReader =
 
   [<CompiledName("Read")>]
-  let read (reader : JsonReader) logger source =
+  let read logger source (reader : JsonReader) =
     try
       if JsonToken.None = reader.TokenType then
         readOrFail reader
@@ -141,7 +152,22 @@ module public JsonKeyValueReader =
     with e -> JsonException (sprintf "Failed to read key/values from %s" source, e) |> raise
 
   [<CompiledName("Read")>]
-  let readFrom (path : string) logger =
+  let readFromTextReader logger source (reader : TextReader) =
+    use jreader = new JsonTextReader (reader)
+    read logger source jreader
+
+  [<CompiledName("Read")>]
+  let readFromStreamWithEncoding logger source encoding (stream : Stream) =
+    use reader = new StreamReader (stream, encoding, false)
+    readFromTextReader logger source reader
+
+  [<CompiledName("Read")>]
+  let readFromStream logger source (stream : Stream) =
+    use reader = new StreamReader (stream, true)
+    readFromTextReader logger source reader
+
+  [<CompiledName("Read")>]
+  let readFromPath logger (path : string) =
     use reader = new StreamReader (path, Encoding.UTF8, true)
     use jreader = new JsonTextReader (reader)
-    read jreader logger path
+    read logger path jreader
