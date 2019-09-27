@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>2.1.0</Version>
+    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+    <Version>3.0.0</Version>
     <!-- NuGet -->
     <PackageId>NCoreUtils.Localization.Json.Resources</PackageId>
     <Title>$(PackageId)</Title>
@@ -19,13 +19,16 @@
     <DebugType>portable</DebugType>
     <!-- <GenerateDocumentationFile>true</GenerateDocumentationFile> -->
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <NoWarn>2003</NoWarn>
+    <NoWarn>2003;NU5105</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Configuration.fs" />
     <Compile Include="LocalizationAccessor.fs" />
     <Compile Include="LocalizationSourceRepository.fs" />
     <Compile Include="BuilderExtensions.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="4.7.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NCoreUtils.Localization.Json.Abstractions\NCoreUtils.Localization.Json.Abstractions.fsproj" />

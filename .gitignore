@@ -1,4 +1,5 @@
 .vscode
+.ionide
 NCoreUtils*/bin
 NCoreUtils*/obj
 NCoreUtils.Localization.Unit/coverage.opencover.xml
