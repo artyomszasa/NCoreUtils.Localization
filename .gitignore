@@ -1,0 +1,8 @@
+.vs
+.vscode
+
+NCoreUtils*/obj
+NCoreUtils*/bin
+
+NCoreUtils*Unit/report
+NCoreUtils*Unit/coverage.opencover.xml

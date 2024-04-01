@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>10.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <IsTrimmable>true</IsTrimmable>
+    <Version>6.0.0-beta00</Version>
+    <Fx6NugetVersion>6.0.0</Fx6NugetVersion>
+    <Fx3NugetVersion>3.1.16</Fx3NugetVersion>
+    <FxNugetVersion Condition=" '$(TargetFramework)' == 'net6.0' ">$(Fx6NugetVersion)</FxNugetVersion>
+    <FxNugetVersion Condition=" '$(TargetFramework)' != 'net6.0' ">$(Fx3NugetVersion)</FxNugetVersion>
+  </PropertyGroup>
+</Project>

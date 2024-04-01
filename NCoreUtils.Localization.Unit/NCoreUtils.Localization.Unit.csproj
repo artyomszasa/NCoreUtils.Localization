@@ -1,0 +1,70 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.msbuild" Version="3.1.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.11.0" />
+    <PackageReference Include="ReportGenerator" Version="5.0.0" />
+    <PackageReference Include="xunit" Version="2.4.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector" Version="3.1.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="i18n\**\*.i18n.json" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="i18n\**\*.i18n.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NCoreUtils.Localization.Json.Resources\NCoreUtils.Localization.Json.Resources.csproj" />
+  </ItemGroup>
+
+  <Target Name="RunCoverageTests">
+    <PropertyGroup>
+      <ReportGeneratorPaths>$([System.IO.Directory]::GetFiles($(NuGetPackageRoot), "ReportGenerator.exe", System.IO.SearchOption.AllDirectories))</ReportGeneratorPaths>
+    </PropertyGroup>
+    <ItemGroup>
+      <ReportGeneratorVersion Include="%(PackageReference.Version)" Condition="%(PackageReference.Identity) == 'ReportGenerator'" />
+    </ItemGroup>
+    <PropertyGroup>
+      <UseReportGeneratorVersion>@(ReportGeneratorVersion)</UseReportGeneratorVersion>
+    </PropertyGroup>
+    <ItemGroup>
+      <ReportGeneratorCandidates Include="$(ReportGeneratorPaths)" />
+      <ReportGeneratorPath Include="%(ReportGeneratorCandidates.Identity)" Condition="$([System.String]::new('%(ReportGeneratorCandidates.Identity)').Contains($(UseReportGeneratorVersion)))" />
+    </ItemGroup>
+    <PropertyGroup>
+      <UseReportGeneratorPath>@(ReportGeneratorPath)</UseReportGeneratorPath>
+    </PropertyGroup>
+    <Message Importance="High" Text="Version = @(ReportGeneratorVersion)" />
+    <Message Importance="High" Text="Candidates = %(ReportGeneratorCandidates.Identity)" />
+    <Message Importance="High" Text="Chosen path = $(UseReportGeneratorPath)" />
+    <PropertyGroup>
+      <CollectCoverage>True</CollectCoverage>
+      <CoverletOutputFormat>opencover</CoverletOutputFormat>
+    </PropertyGroup>
+    <!-- msbuild not integrated this yet...
+    <CallTarget Targets="VSTest" />
+    -->
+    <Exec Command="dotnet test --no-restore /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:Include=&quot;[NCoreUtils.Localization*]*&quot; /p:Exclude=&quot;[NCoreUtils.Localization.Unit]*&quot; /p:ParallelizeTestCollections=false" />
+    <Exec Command="mono $(UseReportGeneratorPath) -reports:coverage.opencover.xml -targetdir:report -reporttypes:Html" Condition="'$(OS)' == 'Unix'" />
+    <Exec Command="$(UseReportGeneratorPath) -reports:coverage.opencover.xml -targetdir:report -reporttypes:Html" Condition="'$(OS)' != 'Unix'" />
+  </Target>
+
+</Project>
