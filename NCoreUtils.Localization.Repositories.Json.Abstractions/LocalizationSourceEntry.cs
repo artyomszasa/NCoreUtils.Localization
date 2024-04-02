@@ -2,15 +2,9 @@ using System.Globalization;
 
 namespace NCoreUtils.Localization;
 
-public readonly struct LocalizationSourceEntry
+public readonly struct LocalizationSourceEntry(LocalizationPath path, CultureInfo? culture)
 {
-    public LocalizationPath Path { get; }
+    public LocalizationPath Path { get; } = path;
 
-    public CultureInfo? Culture { get; }
-
-    public LocalizationSourceEntry(LocalizationPath path, CultureInfo? culture)
-    {
-        Path = path;
-        Culture = culture;
-    }
+    public CultureInfo? Culture { get; } = culture;
 }

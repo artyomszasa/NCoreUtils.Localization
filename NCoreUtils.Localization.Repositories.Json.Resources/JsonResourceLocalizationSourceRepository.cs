@@ -47,7 +47,7 @@ public class JsonResourceLocalizationSourceRepository : ILocalizationSourceRepos
         = assembly => new JsonResourceLocalizationAccessor(assembly);
 
     private Func<JsonResourceLocalizationAccessor, IReadOnlyDictionary<LocalizationPath, IReadOnlyList<CultureInfo>>> EntryFactory { get; }
-        = accessor => GetAll(accessor);
+        = GetAll;
 
     public IJsonResourceLocalizationConfiguration Configuration { get; }
 
@@ -75,7 +75,7 @@ public class JsonResourceLocalizationSourceRepository : ILocalizationSourceRepos
         }
         var accessor = GetAccessor(assembly);
         var entries = GetEntries(accessor);
-        var cultures = entries.GetValueOrDefault(path, Array.Empty<CultureInfo>());
+        var cultures = entries.GetValueOrDefault(path, []);
         source = new JsonLocalizationSource(
             path,
             cultures,

@@ -3,12 +3,9 @@ using Microsoft.Extensions.Localization;
 
 namespace NCoreUtils.Localization.Internal;
 
-public class StringLocalizerFactory : IStringLocalizerFactory
+public class StringLocalizerFactory(ILocalizationSourceRepository repository) : IStringLocalizerFactory
 {
-    public ILocalizationSourceRepository Repository { get; }
-
-    public StringLocalizerFactory(ILocalizationSourceRepository repository)
-        => Repository = repository ?? throw new ArgumentNullException(nameof(repository));
+    public ILocalizationSourceRepository Repository { get; } = repository ?? throw new ArgumentNullException(nameof(repository));
 
     public IStringLocalizer Create(Type resourceSource)
         => new StringLocalizer(Repository.GetSource(resourceSource));

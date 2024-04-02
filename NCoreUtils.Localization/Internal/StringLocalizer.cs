@@ -6,11 +6,11 @@ using Microsoft.Extensions.Localization;
 
 namespace NCoreUtils.Localization.Internal;
 
-public class StringLocalizer : IStringLocalizer
+public class StringLocalizer(ILocalizationSource source, CultureInfo? culture = default) : IStringLocalizer
 {
-    private CultureInfo? Culture { get; }
+    private CultureInfo? Culture { get; } = culture;
 
-    internal ILocalizationSource Source { get; }
+    internal ILocalizationSource Source { get; } = source;
 
     public LocalizedString this[string key]
         => TryGet(new CaseInsensitive(key), out var result)
@@ -21,12 +21,6 @@ public class StringLocalizer : IStringLocalizer
         => TryGet(new CaseInsensitive(key), out var result)
             ? new LocalizedString(key, string.Format(result, arguments), false)
             : new LocalizedString(key, string.Format(key, arguments), true);
-
-    public StringLocalizer(ILocalizationSource source, CultureInfo? culture = default)
-    {
-        Culture = culture;
-        Source = source;
-    }
 
     private bool TryGetLocalizations([MaybeNullWhen(false)] out IReadOnlyDictionary<CaseInsensitive, string> localizations)
         => Source.TryGetValue(Culture ?? CultureInfo.CurrentCulture, out localizations);
@@ -47,10 +41,10 @@ public class StringLocalizer : IStringLocalizer
         {
             return localizations.Select(kv => new LocalizedString(kv.Key.Value, kv.Value));
         }
-        return Enumerable.Empty<LocalizedString>();
+        return [];
     }
 
-#if !NET6_0
+#if !NET6_0_OR_GREATER
 
     IStringLocalizer IStringLocalizer.WithCulture(CultureInfo culture)
         => new StringLocalizer(Source, culture);
@@ -58,9 +52,6 @@ public class StringLocalizer : IStringLocalizer
 #endif
 }
 
-public class StringLocalizer<T> : StringLocalizer, IStringLocalizer<T>
-{
-    public StringLocalizer(StringLocalizerFactory factory, CultureInfo? culture = default)
-        : base(factory.Repository.GetSource(typeof(T)), culture)
-    { }
-}
+public class StringLocalizer<T>(StringLocalizerFactory factory, CultureInfo? culture = default)
+    : StringLocalizer(factory.Repository.GetSource(typeof(T)), culture), IStringLocalizer<T>
+{ }

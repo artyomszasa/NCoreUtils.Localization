@@ -4,17 +4,14 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace NCoreUtils.Localization;
 
-public class LocalizationSourceRepositoryBuilder
+public class LocalizationSourceRepositoryBuilder(IServiceCollection services)
 {
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     private Type? Repository { get; set; }
 
-    public IServiceCollection Services { get; }
+    public IServiceCollection Services { get; } = services;
 
-    public LocalizationSourceRepositoryBuilder(IServiceCollection services)
-    {
-        Services = services;
-    }
-
+    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     internal Type GetRepositoryType()
         => Repository is null
             ? throw new InvalidOperationException("No localization source repository has been registered.")

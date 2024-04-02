@@ -4,7 +4,7 @@ using NCoreUtils.Localization.Internal;
 
 namespace NCoreUtils.Localization;
 
-public readonly struct LocalizationPath : IEquatable<LocalizationPath>
+public readonly struct LocalizationPath(string? location, string? basePath) : IEquatable<LocalizationPath>
 {
     public static bool operator ==(LocalizationPath left, LocalizationPath right)
         => left.Equals(right);
@@ -12,17 +12,11 @@ public readonly struct LocalizationPath : IEquatable<LocalizationPath>
     public static bool operator !=(LocalizationPath left, LocalizationPath right)
         => !(left == right);
 
-    public string? Location { get; }
+    public string? Location { get; } = location;
 
-    public string? BasePath { get; }
+    public string? BasePath { get; } = basePath;
 
     public bool IsEmpty => string.IsNullOrEmpty(Location) && string.IsNullOrEmpty(BasePath);
-
-    public LocalizationPath(string? location, string? basePath)
-    {
-        Location = location;
-        BasePath = basePath;
-    }
 
     public bool Equals(LocalizationPath other)
         => NullEmptyStringComparer.Instance.Equals(Location, other.Location)

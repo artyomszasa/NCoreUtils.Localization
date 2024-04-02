@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace NCoreUtils.Localization;
 
-public class JsonResourceLocalizationAccessor : IJsonLocalizationAccessor
+public class JsonResourceLocalizationAccessor(Assembly assembly) : IJsonLocalizationAccessor
 {
     private static Regex RegexI18nJson { get; } = new(
         "(((?<location>.*)\\.)?(?<basename>[^.]+)\\.)?(?<locale>[a-z]+|[a-z]+-[a-z]+)\\.i18n\\.json$",
@@ -29,10 +29,7 @@ public class JsonResourceLocalizationAccessor : IJsonLocalizationAccessor
         }
     }
 
-    private Assembly Assembly { get; }
-
-    public JsonResourceLocalizationAccessor(Assembly assembly)
-        => Assembly = assembly ?? throw new ArgumentNullException(nameof(assembly));
+    private Assembly Assembly { get; } = assembly ?? throw new ArgumentNullException(nameof(assembly));
 
     IAsyncEnumerable<LocalizationSourceEntry> IJsonLocalizationAccessor.EnumerateAsync(CancellationToken cancellationToken)
         => Enumerate().ToAsyncEnumerable();
@@ -90,11 +87,7 @@ public class JsonResourceLocalizationAccessor : IJsonLocalizationAccessor
                 name = $"{path.Location}.{path.BasePath}.{culture.Name}.i18n.json";
             }
         }
-        var stream = Assembly.GetManifestResourceStream(name);
-        if (stream is null)
-        {
-            throw new InvalidOperationException($"No resource stream can be created for \"{name}\".");
-        }
+        var stream = Assembly.GetManifestResourceStream(name) ?? throw new InvalidOperationException($"No resource stream can be created for \"{name}\".");
         return stream;
     }
 }

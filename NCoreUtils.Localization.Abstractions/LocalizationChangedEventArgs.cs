@@ -3,10 +3,7 @@ using System.Collections.Generic;
 
 namespace NCoreUtils.Localization;
 
-public class LocalizationChangedEventArgs : EventArgs
+public class LocalizationChangedEventArgs(IReadOnlyList<string> changedLocales) : EventArgs
 {
-    public IReadOnlyList<string> ChangedLocales { get; }
-
-    public LocalizationChangedEventArgs(IReadOnlyList<string> changedLocales)
-        => ChangedLocales = changedLocales ?? throw new ArgumentNullException(nameof(changedLocales));
+    public IReadOnlyList<string> ChangedLocales { get; } = changedLocales ?? throw new ArgumentNullException(nameof(changedLocales));
 }
