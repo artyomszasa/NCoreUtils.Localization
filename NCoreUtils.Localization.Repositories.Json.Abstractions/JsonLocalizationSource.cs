@@ -14,13 +14,18 @@ public partial class JsonLocalizationSource : IAsyncDisposable, IDisposable, INa
 {
     private int _isDisposed;
 
+    private IReadOnlyDictionary<CultureInfo, IReadOnlyDictionary<CaseInsensitive, string>>? _entries;
+
     string? INamedLocalizationSource.Location => Path.Location;
 
     string? INamedLocalizationSource.BasePath => Path.BasePath;
 
     private CancellationTokenSource CancellationTokenSource { get; } = new CancellationTokenSource();
 
-    private IReadOnlyDictionary<CultureInfo, Task<IReadOnlyDictionary<CaseInsensitive, string>>> LazyEntries { get; }
+    private Task<IReadOnlyDictionary<CultureInfo, IReadOnlyDictionary<CaseInsensitive, string>>> LazyEntries { get; }
+
+    private IReadOnlyDictionary<CultureInfo, IReadOnlyDictionary<CaseInsensitive, string>> Entries
+        => _entries ??= LazyEntries.GetAwaiter().GetResult();
 
     public LocalizationPath Path { get; }
 
@@ -30,15 +35,15 @@ public partial class JsonLocalizationSource : IAsyncDisposable, IDisposable, INa
 
     public Func<CultureInfo, CancellationToken, ValueTask<Stream>> StreamFactory { get; }
 
-    public IEnumerable<CultureInfo> Keys => LazyEntries.Keys;
+    public IEnumerable<CultureInfo> Keys => Entries.Keys;
 
     public IEnumerable<IReadOnlyDictionary<CaseInsensitive, string>> Values
-        => Task.WhenAll(LazyEntries.Values).GetAwaiter().GetResult();
+        => Entries.Values;
 
-    public int Count => LazyEntries.Count;
+    public int Count => Entries.Count;
 
     public IReadOnlyDictionary<CaseInsensitive, string> this[CultureInfo key]
-        => LazyEntries[key].GetAwaiter().GetResult();
+        => Entries[key];
 
     public JsonLocalizationSource(
         LocalizationPath path,
@@ -50,14 +55,14 @@ public partial class JsonLocalizationSource : IAsyncDisposable, IDisposable, INa
         Cultures = cultures ?? throw new ArgumentNullException(nameof(cultures));
         Logger = logger ?? throw new ArgumentNullException(nameof(logger));
         StreamFactory = streamFactory ?? throw new ArgumentNullException(nameof(streamFactory));
-        LazyEntries = PrepareEntries(cultures, streamFactory, CancellationTokenSource.Token);
+        LazyEntries = Task.Run(() => PrepareEntriesAsync(logger, cultures, streamFactory, CancellationTokenSource.Token));
     }
 
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();
 
     public bool ContainsKey(CultureInfo key)
-        => LazyEntries.ContainsKey(key);
+        => Entries.ContainsKey(key);
 
 #if NETSTANDARD2_1
     public bool TryGetValue(CultureInfo key, [NotNullWhen(true)] out IReadOnlyDictionary<CaseInsensitive, string> value)
@@ -65,10 +70,10 @@ public partial class JsonLocalizationSource : IAsyncDisposable, IDisposable, INa
     public bool TryGetValue(CultureInfo key, [MaybeNullWhen(false)] out IReadOnlyDictionary<CaseInsensitive, string> value)
 #endif
     {
-        if (LazyEntries.TryGetValue(key, out var lazyEntry))
+        if (Entries.TryGetValue(key, out var data))
         {
 
-            value = lazyEntry.GetAwaiter().GetResult();
+            value = data;
             return true;
         }
 #if NETSTANDARD2_1
@@ -81,11 +86,11 @@ public partial class JsonLocalizationSource : IAsyncDisposable, IDisposable, INa
 
     public IEnumerator<KeyValuePair<CultureInfo, IReadOnlyDictionary<CaseInsensitive, string>>> GetEnumerator()
     {
-        foreach (var kv in LazyEntries)
+        foreach (var kv in Entries)
         {
             yield return new KeyValuePair<CultureInfo, IReadOnlyDictionary<CaseInsensitive, string>>(
                 kv.Key,
-                kv.Value.GetAwaiter().GetResult()
+                kv.Value
             );
         }
     }
@@ -112,10 +117,14 @@ public partial class JsonLocalizationSource : IAsyncDisposable, IDisposable, INa
             if (disposing)
             {
                 CancellationTokenSource.Cancel();
-                if (!Task.WhenAll(LazyEntries.Values).Wait(TimeSpan.FromMilliseconds(100)))
+                try
                 {
-                    Logger.LogWarning("Lazy entries generation did not end within 100 ms after cancellation.");
+                    if (!LazyEntries.Wait(TimeSpan.FromMilliseconds(100)))
+                    {
+                        Logger.LogWarning("Lazy entries generation did not end within 100 ms after cancellation.");
+                    }
                 }
+                catch { /* noop */ }
                 CancellationTokenSource.Dispose();
             }
         }
@@ -126,7 +135,7 @@ public partial class JsonLocalizationSource : IAsyncDisposable, IDisposable, INa
         if (0 == Interlocked.CompareExchange(ref _isDisposed, 1, 0))
         {
             CancellationTokenSource.Cancel();
-            await Task.WhenAll(LazyEntries.Values);
+            try { await LazyEntries; } catch { /* noop */ }
             CancellationTokenSource.Dispose();
         }
     }

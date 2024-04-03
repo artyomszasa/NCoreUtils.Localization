@@ -11,7 +11,12 @@ using NCoreUtils.Collections;
 
 namespace NCoreUtils.Localization;
 
-public class JsonResourceLocalizationSourceRepository : ILocalizationSourceRepository, IDisposable, IAsyncDisposable
+public class JsonResourceLocalizationSourceRepository(
+    IJsonResourceLocalizationConfiguration configuration,
+    ILoggerFactory loggerFactory)
+    : ILocalizationSourceRepository
+    , IDisposable
+    , IAsyncDisposable
 {
     private static IReadOnlyDictionary<LocalizationPath, IReadOnlyList<CultureInfo>> GetAll(JsonResourceLocalizationAccessor accessor)
     {
@@ -49,17 +54,9 @@ public class JsonResourceLocalizationSourceRepository : ILocalizationSourceRepos
     private Func<JsonResourceLocalizationAccessor, IReadOnlyDictionary<LocalizationPath, IReadOnlyList<CultureInfo>>> EntryFactory { get; }
         = GetAll;
 
-    public IJsonResourceLocalizationConfiguration Configuration { get; }
+    public IJsonResourceLocalizationConfiguration Configuration { get; } = configuration;
 
-    public ILoggerFactory LoggerFactory { get; }
-
-    public JsonResourceLocalizationSourceRepository(
-        IJsonResourceLocalizationConfiguration configuration,
-        ILoggerFactory loggerFactory)
-    {
-        Configuration = configuration;
-        LoggerFactory = loggerFactory;
-    }
+    public ILoggerFactory LoggerFactory { get; } = loggerFactory;
 
     private JsonResourceLocalizationAccessor GetAccessor(Assembly assembly)
         => AccessorCache.GetOrAdd(assembly, AccessorFactory);
