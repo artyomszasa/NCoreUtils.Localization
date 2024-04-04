@@ -121,7 +121,7 @@ public partial class JsonLocalizationSource : IAsyncDisposable, IDisposable, INa
                 {
                     if (!LazyEntries.Wait(TimeSpan.FromMilliseconds(100)))
                     {
-                        Logger.LogWarning("Lazy entries generation did not end within 100 ms after cancellation.");
+                        Logger.LogGenerationDidNotEndWithin100Ms();
                     }
                 }
                 catch { /* noop */ }

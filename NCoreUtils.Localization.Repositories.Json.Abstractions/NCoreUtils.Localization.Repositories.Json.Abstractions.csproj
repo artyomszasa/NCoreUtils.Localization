@@ -12,4 +12,10 @@
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
     <PackageReference Include="System.Text.Json" Version="6.0.9" />
   </ItemGroup>
+    <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+    <Compile Remove="LoggingExtensions.Legacy.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.1' ">
+    <Compile Remove="LoggingExtensions.cs" />
+  </ItemGroup>
 </Project>
