@@ -45,19 +45,19 @@ public partial class JsonLocalizationSource
                 data = await ReadAsync(culture, streamFactory, cancellationToken);
                 if (entries.ContainsKey(culture))
                 {
-                    logger.LogLocalizationWarning(culture.Name);
+                    logger.LogFailedToReadLocalizationData(culture.Name);
                 }
                 entries[culture] = data;
                 stopwatch.Stop();
-                logger.LogLocalizationDataDebug(culture.Name, stopwatch.ElapsedMilliseconds);
+                logger.LogReadingLocalizationDataSuccess(culture.Name, stopwatch.ElapsedMilliseconds);
             }
             catch (Exception exn)
             {
-                logger.LogLocalizationError(exn, culture.Name);
+                logger.LogOverwritingLocalizationData(exn, culture.Name);
             }
         }
         stopwatch0.Stop();
-        logger.LogLocalizationEntriesDebug(stopwatch0.ElapsedMilliseconds);
+        logger.LogReadingLocalizationEntriesSuccess(stopwatch0.ElapsedMilliseconds);
         return entries;
     }
         // => cultures.ToDictionary(culture => culture, culture => ReadAsync(culture, streamFactory, cancellationToken));
