@@ -45,7 +45,7 @@ public partial class JsonLocalizationSource
                 data = await ReadAsync(culture, streamFactory, cancellationToken);
                 if (entries.ContainsKey(culture))
                 {
-                    logger.LogFailedToReadLocalizationData(culture.Name);
+                    logger.LogOverwritingLocalizationData(culture.Name);
                 }
                 entries[culture] = data;
                 stopwatch.Stop();
@@ -53,12 +53,11 @@ public partial class JsonLocalizationSource
             }
             catch (Exception exn)
             {
-                logger.LogOverwritingLocalizationData(exn, culture.Name);
+                logger.LogFailedToReadLocalizationData(exn, culture.Name);
             }
         }
         stopwatch0.Stop();
         logger.LogReadingLocalizationEntriesSuccess(stopwatch0.ElapsedMilliseconds);
         return entries;
     }
-        // => cultures.ToDictionary(culture => culture, culture => ReadAsync(culture, streamFactory, cancellationToken));
 }

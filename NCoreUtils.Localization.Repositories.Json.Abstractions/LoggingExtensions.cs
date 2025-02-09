@@ -1,6 +1,4 @@
 using System;
-using System.Globalization;
-using System.IO;
 using Microsoft.Extensions.Logging;
 
 namespace NCoreUtils.Localization;
@@ -13,7 +11,7 @@ internal static partial class LoggingExtensions
         Level = LogLevel.Warning,
         Message = "Overwriting localization data for {locale}."
     )]
-    public static partial void LogOverwritingLocalizationData(this ILogger logger, Exception exn, string locale);
+    public static partial void LogOverwritingLocalizationData(this ILogger logger, string locale);
 
     [LoggerMessage(
         EventId = FailedToReadLocalizationData,
@@ -21,7 +19,7 @@ internal static partial class LoggingExtensions
         Level = LogLevel.Warning,
         Message = "Failed to read localization data for {locale}."
     )]
-    public static partial void LogFailedToReadLocalizationData(this ILogger logger, string locale);
+    public static partial void LogFailedToReadLocalizationData(this ILogger logger, Exception exn, string locale);
 
     [LoggerMessage(
         EventId = GenerationDidNotEndWithin100Ms,

@@ -5,19 +5,19 @@ namespace NCoreUtils.Localization;
 
 internal static partial class LoggingExtensions
 {
-    public static void LogOverwritingLocalizationData(this ILogger logger, Exception exn, string locale)
+    public static void LogOverwritingLocalizationData(this ILogger logger, string locale)
         => logger.Log(
             logLevel: LogLevel.Warning,
             eventId: new EventId(OverwritingLocalizationData, nameof(OverwritingLocalizationData)),
-            message: "Overwriting localization data for {locale}.",
-            exception: exn
+            message: "Overwriting localization data for {locale}."
         );
 
-    public static void LogFailedToReadLocalizationData(this ILogger logger, string locale)
+    public static void LogFailedToReadLocalizationData(this ILogger logger, Exception exn, string locale)
         => logger.Log(
             logLevel: LogLevel.Warning,
             eventId: new EventId(FailedToReadLocalizationData, nameof(FailedToReadLocalizationData)),
-            message: "Failed to read localization data for {locale}."
+            message: "Failed to read localization data for {locale}.",
+            exception: exn
         );
 
     public static void LogGenerationDidNotEndWithin100Ms(this ILogger logger)

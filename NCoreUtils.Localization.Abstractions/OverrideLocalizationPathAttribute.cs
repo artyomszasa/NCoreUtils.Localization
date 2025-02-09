@@ -3,15 +3,10 @@ using System;
 namespace NCoreUtils.Localization;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
-public class OverrideLocalizationPathAttribute : Attribute
+public class OverrideLocalizationPathAttribute(string? location, string? basePath)
+    : Attribute
 {
-    public string? Location { get; }
+    public string? Location { get; } = location;
 
-    public string? BasePath { get; }
-
-    public OverrideLocalizationPathAttribute(string? location, string? basePath)
-    {
-        Location = location;
-        BasePath = basePath;
-    }
+    public string? BasePath { get; } = basePath;
 }

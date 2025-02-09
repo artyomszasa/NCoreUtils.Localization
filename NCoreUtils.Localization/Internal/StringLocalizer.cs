@@ -2,20 +2,29 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Localization;
 
 namespace NCoreUtils.Localization.Internal;
 
 public class StringLocalizer(ILocalizationSource source, CultureInfo? culture = default) : IStringLocalizer
 {
+    private static readonly ConditionalWeakTable<IReadOnlyDictionary<CaseInsensitive, string>, LookupDictionary<CaseInsensitive, LocalizedString>> looseCache = [];
+
     private CultureInfo? Culture { get; } = culture;
+
+    private LookupDictionary<CaseInsensitive, LocalizedString> Cache { get; } = looseCache.GetOrCreateValue(source);
 
     internal ILocalizationSource Source { get; } = source;
 
     public LocalizedString this[string key]
-        => TryGet(new CaseInsensitive(key), out var result)
-            ? new LocalizedString(key, result, false)
-            : new LocalizedString(key, key, true);
+        => Cache.GetOrAdd(new CaseInsensitive(key), this, static (ciKey, self) =>
+        {
+            var uKey = ciKey.ToUpperString();
+            return self.TryGet(ciKey, out var result)
+                ? new LocalizedString(uKey, result, false)
+                : new LocalizedString(uKey, uKey, true);
+        });
 
     public LocalizedString this[string key, params object[] arguments]
         => TryGet(new CaseInsensitive(key), out var result)

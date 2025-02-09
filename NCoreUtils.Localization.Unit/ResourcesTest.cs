@@ -31,7 +31,7 @@ public sealed class ResourcesTest : IDisposable
             Assert.Equal("Key2HU", value2.Value);
             var value3 = stringLocalizer["NoValue"];
             Assert.True(value3.ResourceNotFound);
-            Assert.Equal("NoValue", value3.Value);
+            Assert.True(StringComparer.InvariantCultureIgnoreCase.Equals("NoValue", value3.Value));
         }
         {
             CultureInfo.CurrentCulture = new CultureInfo("en-US");
@@ -43,7 +43,7 @@ public sealed class ResourcesTest : IDisposable
             Assert.Equal("Key2EN", value2.Value);
             var value3 = stringLocalizer["NoValue"];
             Assert.True(value3.ResourceNotFound);
-            Assert.Equal("NoValue", value3.Value);
+            Assert.True(StringComparer.InvariantCultureIgnoreCase.Equals("NoValue", value3.Value));
         }
     }
 
