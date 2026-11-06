@@ -1,0 +1,29 @@
+<Project>
+
+  <!--
+    Shades YamlDotNet: its types are merged into the generator assembly as internal, so that the
+    generator has no runtime dependencies and cannot conflict with other analyzers.
+
+    The merge is done in place on the intermediate assembly, before the output is copied, therefore
+    both the build output (project references) and the package contain the merged assembly.
+  -->
+  <Target Name="ShadeDependencies"
+          AfterTargets="CoreCompile"
+          Inputs="@(IntermediateAssembly)"
+          Outputs="$(IntermediateOutputPath)shaded.stamp">
+    <ItemGroup>
+      <_ShadedAssembly Include="@(ReferencePath)" Condition="'%(Filename)' == 'YamlDotNet'" />
+      <_ShadeLibraryPath Include="@(ReferencePath->'%(RootDir)%(Directory)')" />
+      <FileWrites Include="$(IntermediateOutputPath)shaded.stamp" />
+    </ItemGroup>
+    <ILRepack InputAssemblies="@(IntermediateAssembly->'%(FullPath)');@(_ShadedAssembly)"
+              OutputFile="@(IntermediateAssembly->'%(FullPath)')"
+              LibraryPath="@(_ShadeLibraryPath->Distinct())"
+              TargetKind="SameAsPrimaryAssembly"
+              Internalize="true"
+              DebugInfo="true"
+              Parallel="true" />
+    <Touch Files="$(IntermediateOutputPath)shaded.stamp" AlwaysCreate="true" />
+  </Target>
+
+</Project>

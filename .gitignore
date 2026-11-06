@@ -1,0 +1,7 @@
+.vs
+.vscode
+
+NCoreUtils*/obj
+NCoreUtils*/bin
+
+prompt.txt
