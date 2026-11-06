@@ -1,0 +1,3 @@
+SimpleValue: "Simple value"
+Nested:
+  Value: "Second level value"

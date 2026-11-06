@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="NCoreUtils.Localization.Generator/NCoreUtils.Localization.Generator.csproj" />
+  <Project Path="NCoreUtils.Localization.Test/NCoreUtils.Localization.Test.csproj" />
 </Solution>
