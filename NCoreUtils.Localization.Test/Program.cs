@@ -21,7 +21,10 @@ foreach (var locale in new string[] { "hu-HU", "en-GB", "de-DE" })
 
     // USER CODE *******************************************************************************************************
 
+    Console.WriteLine((l.FormatProvider as CultureInfo)?.Name);
     Console.WriteLine(l.SimpleValue);
     Console.WriteLine(l.Nested.Value);
-    // USER CODE *******************************************************************************************************
+    Console.WriteLine(l.Interpolate(2));
+
+    // *****************************************************************************************************************
 }

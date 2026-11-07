@@ -10,6 +10,7 @@
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <IsTrimmable>false</IsTrimmable>
+    <Version>1.0.0-beta04</Version>
     <!-- RS2008: analyzer release tracking is not used. -->
     <NoWarn>$(NoWarn);RS2008</NoWarn>
   </PropertyGroup>

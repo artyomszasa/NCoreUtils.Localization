@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.CodeAnalysis.CSharp;
 
 namespace NCoreUtils.Localization.Generator;
@@ -24,7 +25,16 @@ internal sealed class MergedMember(string key, bool isObject, string file, YamlE
     public List<MergedMember> Children { get; } = [];
 
     /// <summary>Values by locale (string keys only).</summary>
-    public Dictionary<string, (string? Value, string File, YamlEntry Entry)> Values { get; } = [];
+    public Dictionary<string, (string? Value, ValueTemplate? Template, string File, YamlEntry Entry)> Values { get; } = [];
+
+    /// <summary>
+    /// Placeholders of the first non-null value (string keys only), all other values must have the same ones.
+    /// A method is generated instead of a property when it is not <c>null</c>.
+    /// </summary>
+    public ValueTemplate? Template { get; set; }
+
+    /// <summary>First non-null value, defines <see cref="Template" />.</summary>
+    public (string File, YamlEntry Entry)? TemplateOrigin { get; set; }
 
     /// <summary>Locales that define this key (object keys only).</summary>
     public HashSet<string> Locales { get; } = [];
@@ -33,6 +43,10 @@ internal sealed class MergedMember(string key, bool isObject, string file, YamlE
 internal sealed class LocalizationMerger(LocalizerTarget target)
 {
     private const string RawValues = "RawValues";
+
+    private const string FormatProvider = "FormatProvider";
+
+    private const string ForceProperties = "ForceProperties";
 
     private readonly List<DiagnosticInfo> diagnostics = [];
 
@@ -49,8 +63,38 @@ internal sealed class LocalizationMerger(LocalizerTarget target)
         {
             merger.MergeEntries(root, file.Entries, file, string.Empty);
         }
+        merger.MergeForceProperties(root);
         merger.CheckTypeNames(root, string.Empty, string.Empty, []);
         return (root, merger.diagnostics);
+    }
+
+    /// <summary>
+    /// Merges the forced properties as a file without values, so they follow the rules of the localization files.
+    /// Its locale is never emitted.
+    /// </summary>
+    private void MergeForceProperties(List<MergedMember> root)
+    {
+        var location = target.Location ?? new(string.Empty, default, default);
+        var entries = target.ForceProperties.Select(property => ToEntry(property, location)).ToArray();
+        var file = new LocalizationFile(
+            ForceProperties,
+            ForceProperties,
+            string.Empty,
+            new(entries),
+            EquatableArray<DiagnosticInfo>.Empty,
+            HasErrors: false);
+        MergeEntries(root, file.Entries, file, string.Empty);
+    }
+
+    private static YamlEntry ToEntry(string property, LocationInfo location)
+    {
+        var keys = property.Split(':');
+        var entry = new YamlEntry(keys[keys.Length - 1], null, null, location);
+        for (var i = keys.Length - 2; i >= 0; --i)
+        {
+            entry = new(keys[i], null, new([entry]), location);
+        }
+        return entry;
     }
 
     private void MergeEntries(List<MergedMember> members, EquatableArray<YamlEntry> entries, LocalizationFile file, string path)
@@ -88,9 +132,36 @@ internal sealed class LocalizationMerger(LocalizerTarget target)
     {
         var locale = file.Locale!;
         var fileName = FileName(file.Path);
+        ValueTemplate? template = null;
+        if (entry.Value is not null)
+        {
+            template = ValueTemplate.Parse(entry.Value, out var error);
+            if (error is not null)
+            {
+                diagnostics.Add(DiagnosticInfo.Create(Diagnostics.InvalidPlaceholder, entry.Location, keyPath, fileName, target.Name, error));
+                return;
+            }
+            if (member.TemplateOrigin is not { } origin)
+            {
+                member.Template = template;
+                member.TemplateOrigin = (fileName, entry);
+            }
+            else if (!ValueTemplate.AreCompatible(member.Template, template))
+            {
+                ReportConflict(
+                    keyPath,
+                    ValueTemplate.Describe(member.Template),
+                    origin.File,
+                    origin.Entry,
+                    ValueTemplate.Describe(template),
+                    file,
+                    entry);
+                return;
+            }
+        }
         if (!member.Values.TryGetValue(locale, out var existing) || existing.Value is null)
         {
-            member.Values[locale] = (entry.Value, fileName, entry);
+            member.Values[locale] = (entry.Value, template, fileName, entry);
         }
         else if (entry.Value is not null && entry.Value != existing.Value)
         {
@@ -115,6 +186,10 @@ internal sealed class LocalizationMerger(LocalizerTarget target)
         else if (entry.Key == RawValues)
         {
             problem = $"'{RawValues}' is reserved by the generated interface";
+        }
+        else if (entry.Key == FormatProvider)
+        {
+            problem = $"'{FormatProvider}' is reserved by the generated interface";
         }
         else if (isRoot && entry.Key == target.Name)
         {

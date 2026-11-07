@@ -2,5 +2,9 @@ using NCoreUtils.Localization;
 
 namespace NCoreUtils;
 
-[GeneratedLocalizer]
+[GeneratedLocalizer(
+    ForceProperties = [
+        "NotYetImplemented:Title"
+    ]
+)]
 internal partial interface ILocalizedStrings { }

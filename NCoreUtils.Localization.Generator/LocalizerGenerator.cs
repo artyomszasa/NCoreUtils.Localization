@@ -30,6 +30,12 @@ public sealed class LocalizerGenerator : IIncrementalGenerator
                 /// </summary>
                 public string Suffix { get; }
 
+                /// <summary>
+                /// Properties to generate even if no localization file defines them: <c>XYZ</c> is a root property,
+                /// <c>XYZ:ABC</c> is the property <c>ABC</c> of the nested object <c>XYZ</c>.
+                /// </summary>
+                public string[]? ForceProperties { get; set; }
+
                 public GeneratedLocalizerAttribute(string suffix = "")
                 {
                     Suffix = suffix;
@@ -78,6 +84,7 @@ public sealed class LocalizerGenerator : IIncrementalGenerator
         var suffix = attribute.ConstructorArguments.Length > 0
             ? attribute.ConstructorArguments[0].Value as string ?? string.Empty
             : string.Empty;
+        var forceProperties = attribute.NamedArguments.FirstOrDefault(static arg => arg.Key == "ForceProperties").Value;
         var isValid = syntax.Modifiers.Any(SyntaxKind.PartialKeyword)
             && !symbol.IsGenericType
             && symbol.ContainingType is null;
@@ -90,6 +97,9 @@ public sealed class LocalizerGenerator : IIncrementalGenerator
             symbol.Name,
             symbol.DeclaredAccessibility == Accessibility.Public ? "public" : "internal",
             suffix,
+            forceProperties.Kind == TypedConstantKind.Array && !forceProperties.IsNull
+                ? new([.. forceProperties.Values.Select(static value => value.Value as string ?? string.Empty)])
+                : EquatableArray<string>.Empty,
             location,
             isValid ? null : DiagnosticInfo.Create(Diagnostics.InvalidTarget, location, symbol.Name));
     }

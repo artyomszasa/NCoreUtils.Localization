@@ -44,6 +44,11 @@ internal static class Diagnostics
         "Generated type name collision",
         "Keys '{0}' and '{1}' of '{2}' both require the generated interface '{3}'");
 
+    public static readonly DiagnosticDescriptor InvalidPlaceholder = Error(
+        "LOC009",
+        "Invalid placeholder",
+        "Value of the key '{0}' in '{1}' cannot be used by '{2}': {3}");
+
     public static readonly DiagnosticDescriptor NoMatchingFiles = new(
         "LOC008",
         "No localization files found",

@@ -1,3 +1,5 @@
 SimpleValue: "Simple value"
 Nested:
   Value: "Second level value"
+  BlaBla: "x"
+Interpolate: "Elemek száma {n:int}"

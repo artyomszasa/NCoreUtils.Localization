@@ -99,11 +99,17 @@ internal sealed class LocalizerEmitter
         writer.WriteLine($"{target.Accessibility} partial interface {target.Name}{path}");
         OpenBlock();
         writer.WriteLine($"{typePrefix}{rawInterface}{path} RawValues {{ get; }}");
+        writer.WriteLine("global::System.IFormatProvider FormatProvider { get; }");
         foreach (var member in members)
         {
             if (member.IsObject)
             {
                 writer.WriteLine($"{typePrefix}{target.Name}{path}_{member.Key} {member.Identifier} {{ get; }}");
+            }
+            else if (member.Template is { } template)
+            {
+                var typeParameters = TypeParameters(template, member.Key, target.Name + path);
+                writer.WriteLine($"string {member.Identifier}{TypeParameterList(typeParameters)}({Parameters(template, typeParameters, withDefaults: true)}){Constraints(typeParameters)};");
             }
             else
             {
@@ -152,34 +158,36 @@ internal sealed class LocalizerEmitter
     }
 
     /// <summary>
-    /// Emits the class of the locale, its nested classes are generated for the nested objects defined by the
-    /// locale. Other nested objects are served by the empty implementation.
+    /// Emits the class of the locale. Raw nested classes are generated for the nested objects defined by the
+    /// locale only, other raw nested objects are served by the empty implementation. Non-raw nested classes are
+    /// generated for all nested objects, so that they expose the culture of the locale.
     /// </summary>
     private void EmitClasses(string? locale, string rootClass, bool isRaw)
     {
         writer.WriteLine($"private sealed class {rootClass} : {InterfaceName(isRaw, string.Empty)}");
         OpenBlock();
-        EmitClassBody(locale, rootClass, rootClass, root, string.Empty, isRaw);
+        EmitClassBody(locale, rootClass, rootClass, root, string.Empty, isRaw, rawDefined: true);
         EmitNestedClasses(locale, rootClass, root, string.Empty, isRaw);
         CloseBlock();
     }
 
     private void EmitNestedClasses(string? locale, string rootClass, List<MergedMember> members, string path, bool isRaw)
     {
-        foreach (var member in members.Where(m => IsDefined(m, locale)))
+        foreach (var member in members.Where(m => m.IsObject && (!isRaw || IsDefined(m, locale))))
         {
             var nestedPath = path + "_" + member.Key;
             var name = rootClass + nestedPath;
             writer.WriteLineNoTabs(string.Empty);
             writer.WriteLine($"internal sealed class {name} : {InterfaceName(isRaw, nestedPath)}");
             OpenBlock();
-            EmitClassBody(locale, rootClass, name, member.Children, nestedPath, isRaw);
+            EmitClassBody(locale, rootClass, name, member.Children, nestedPath, isRaw, IsDefined(member, locale));
             CloseBlock();
             EmitNestedClasses(locale, rootClass, member.Children, nestedPath, isRaw);
         }
     }
 
-    private void EmitClassBody(string? locale, string rootClass, string name, List<MergedMember> members, string path, bool isRaw)
+    /// <param name="rawDefined">Whether the locale defines the object, i.e. it has its own raw class.</param>
+    private void EmitClassBody(string? locale, string rootClass, string name, List<MergedMember> members, string path, bool isRaw, bool rawDefined)
     {
         var implemented = InterfaceName(isRaw, path);
         if (isRaw)
@@ -191,22 +199,42 @@ internal sealed class LocalizerEmitter
         }
         else
         {
-            var rawName = "Raw" + name;
-            var rawClass = path.Length == 0 ? rawName : $"Raw{rootClass}.{rawName}";
+            var rawRoot = rawDefined ? "Raw" + rootClass : "Raw" + LocalizerNames.EmptyLocale;
+            var rawClass = path.Length == 0 ? rawRoot : $"{rawRoot}.{rawRoot}{path}";
+            var rawType = InterfaceName(true, path);
+            const string cultureType = "global::System.Globalization.CultureInfo";
+            if (path.Length != 0)
+            {
+                writer.WriteLine($"public static {cultureType} Culture => {rootClass}.Culture;");
+            }
+            else if (locale is null)
+            {
+                writer.WriteLine($"public static {cultureType} Culture => {cultureType}.InvariantCulture;");
+            }
+            else
+            {
+                // Created on first use only, so a culture that cannot be created does not break the locale class.
+                writer.WriteLine($"private static {cultureType}? _culture;");
+                writer.WriteLineNoTabs(string.Empty);
+                writer.WriteLine($"public static {cultureType} Culture => _culture ??= new {cultureType}({Literal(locale)});");
+            }
+            writer.WriteLineNoTabs(string.Empty);
             writer.WriteLine($"public static {name} Default {{ get; }} = new {name}({rawClass}.Default);");
             writer.WriteLineNoTabs(string.Empty);
-            writer.WriteLine($"private readonly {rawClass} rawValues;");
+            writer.WriteLine($"private readonly {rawType} rawValues;");
             writer.WriteLineNoTabs(string.Empty);
-            writer.WriteLine($"private {name}({rawClass} rawValues) {{ this.rawValues = rawValues; }}");
+            writer.WriteLine($"private {name}({rawType} rawValues) {{ this.rawValues = rawValues; }}");
             writer.WriteLineNoTabs(string.Empty);
-            writer.WriteLine($"{InterfaceName(true, path)} {implemented}.RawValues => rawValues;");
+            writer.WriteLine($"{rawType} {implemented}.RawValues => rawValues;");
+            writer.WriteLineNoTabs(string.Empty);
+            writer.WriteLine($"global::System.IFormatProvider {implemented}.FormatProvider => Culture;");
         }
         foreach (var member in members)
         {
             if (member.IsObject)
             {
                 var nestedPath = path + "_" + member.Key;
-                var owner = IsDefined(member, locale)
+                var owner = !isRaw || IsDefined(member, locale)
                     ? rootClass
                     : (isRaw ? "Raw" : string.Empty) + LocalizerNames.EmptyLocale;
                 writer.WriteLine($"{InterfaceName(isRaw, nestedPath)} {implemented}.{member.Identifier} => {owner}.{owner}{nestedPath}.Default;");
@@ -216,7 +244,99 @@ internal sealed class LocalizerEmitter
                 var value = locale is not null && member.Values.TryGetValue(locale, out var entry) ? entry.Value : null;
                 writer.WriteLine($"string? {implemented}.{member.Identifier} => {(value is null ? "null" : Literal(value))};");
             }
+            else if (member.Template is { } template)
+            {
+                var localeTemplate = locale is not null && member.Values.TryGetValue(locale, out var entry) ? entry.Template : null;
+                EmitMethod(member, template, localeTemplate, implemented, target.Name + path, rootClass);
+            }
         }
+    }
+
+    /// <param name="template">Placeholders shared by all locales, defines the signature.</param>
+    /// <param name="localeTemplate">Value of the locale, <c>null</c> if the locale has no value for the key.</param>
+    /// <param name="implementedName">Unqualified name of the implemented interface.</param>
+    /// <param name="rootClass">Locale class, its culture is used when no format provider is passed.</param>
+    private void EmitMethod(MergedMember member, ValueTemplate template, ValueTemplate? localeTemplate, string implemented, string implementedName, string rootClass)
+    {
+        // Constraints are inherited from the interface, explicit implementations must not repeat them.
+        var typeParameters = TypeParameters(template, member.Key, implementedName);
+        writer.WriteLine($"string {implemented}.{member.Identifier}{TypeParameterList(typeParameters)}({Parameters(template, typeParameters, withDefaults: false)})");
+        OpenBlock();
+        if (localeTemplate is null)
+        {
+            writer.WriteLine($"return {Literal(member.Key)};");
+            CloseBlock();
+            return;
+        }
+        if (template.HasTimestamp)
+        {
+            writer.WriteLine($"if ({ValueTemplate.TimeZoneParameter} is not null)");
+            OpenBlock();
+            foreach (var parameter in template.Parameters.Where(p => p.Type == PlaceholderType.Timestamp))
+            {
+                writer.WriteLine($"{parameter.Identifier} = global::System.TimeZoneInfo.ConvertTime({parameter.Identifier}, {ValueTemplate.TimeZoneParameter});");
+            }
+            CloseBlock();
+        }
+        var text = new System.Text.StringBuilder();
+        foreach (var (segment, parameter) in localeTemplate.Segments)
+        {
+            if (parameter is null)
+            {
+                var escaped = Literal(segment);
+                text.Append(escaped.Substring(1, escaped.Length - 2).Replace("{", "{{").Replace("}", "}}"));
+            }
+            else
+            {
+                text.Append('{').Append(parameter.Identifier).Append('}');
+            }
+        }
+        writer.WriteLine($"return global::System.String.Create({ValueTemplate.FormatProviderParameter} ?? {rootClass}.Culture, $\"{text}\");");
+        CloseBlock();
+    }
+
+    /// <summary>
+    /// Names the type parameters of the <see cref="PlaceholderType.Any"/> parameters: <c>T1</c>, <c>T2</c>... The
+    /// prefix is extended if a name would collide with a parameter, the method or the containing interface.
+    /// </summary>
+    private static Dictionary<TemplateParameter, string> TypeParameters(ValueTemplate template, string method, string containingType)
+    {
+        var generic = template.Parameters.Where(p => p.Type == PlaceholderType.Any).ToList();
+        var result = new Dictionary<TemplateParameter, string>(generic.Count);
+        if (generic.Count == 0)
+        {
+            return result;
+        }
+        var prefix = "T";
+        while (Enumerable.Range(1, generic.Count).Select(i => prefix + i).Any(n => n == method || n == containingType || template.Parameters.Any(p => p.Name == n)))
+        {
+            prefix += "T";
+        }
+        for (var i = 0; i < generic.Count; ++i)
+        {
+            result.Add(generic[i], prefix + (i + 1));
+        }
+        return result;
+    }
+
+    private static string TypeParameterList(Dictionary<TemplateParameter, string> typeParameters)
+        => typeParameters.Count == 0 ? string.Empty : "<" + string.Join(", ", typeParameters.Values) + ">";
+
+    private static string Constraints(Dictionary<TemplateParameter, string> typeParameters)
+        => string.Concat(typeParameters.Values.Select(t => $" where {t} : global::System.ISpanFormattable"));
+
+    private static string Parameters(ValueTemplate template, Dictionary<TemplateParameter, string> typeParameters, bool withDefaults)
+    {
+        var defaultValue = withDefaults ? " = null" : string.Empty;
+        var parameters = template.Parameters
+            .Select(p => $"{(typeParameters.TryGetValue(p, out var t) ? t : p.TypeName)} {p.Identifier}")
+            .ToList();
+        if (template.HasTimestamp)
+        {
+            parameters.Add($"global::System.TimeZoneInfo? {ValueTemplate.TimeZoneParameter}{defaultValue}");
+        }
+        parameters.Add($"global::System.IFormatProvider? {ValueTemplate.FormatProviderParameter}{defaultValue}");
+        return string.Join(", ", parameters);
     }
 
     private static bool IsDefined(MergedMember member, string? locale)
